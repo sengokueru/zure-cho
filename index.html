@@ -1,0 +1,1171 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3b3f8f">
+<title>ズレ帳（仮）</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f6f6f3;--card:#fff;--ink:#1d1f2b;--sub:#5d6275;--line:#e3e3dc;--pri:#3b3f8f;--pri-ink:#fff;--good:#2e7d5b;--warn:#b5462f;--soft:#eef0fb}
+@media (prefers-color-scheme:dark){:root{--bg:#14151c;--card:#1d1f29;--ink:#eceef6;--sub:#a2a7ba;--line:#2e3140;--pri:#8e94ff;--pri-ink:#0f1020;--good:#5cc79a;--warn:#ff8a70;--soft:#242742}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{height:100%;-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;padding:env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom))}
+main{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:4px 0 12px}
+h2{font-size:17px;margin:22px 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+.muted{color:var(--sub);font-size:14px}
+.small{font-size:12px}
+label{display:block;font-weight:600;margin:14px 0 6px}
+input[type=text],textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:84px;resize:vertical}
+input[type=range]{width:100%;accent-color:var(--pri)}
+input[type=file]{max-width:100%}
+button,a.btn{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 14px;text-align:center;text-decoration:none;display:inline-block}
+button.pri,a.btn.pri{background:var(--pri);color:var(--pri-ink);border-color:var(--pri);font-weight:700}
+.block{display:block;width:100%}
+button.danger{color:var(--warn)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1 1 0;min-width:0}
+.scale{display:flex;gap:6px;margin-top:6px}
+.scale button{flex:1;padding:10px 0;min-width:0}
+.scale button.on{background:var(--pri);color:var(--pri-ink);border-color:var(--pri);font-weight:700}
+.legend{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-top:4px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:10}
+nav button{flex:1;border:0;border-radius:0;background:none;padding:8px 0 10px;font-size:12px;color:var(--sub);min-width:0}
+nav button.on{color:var(--pri);font-weight:700}
+nav .ic{display:block;font-size:20px;line-height:1.3}
+.hint{background:var(--soft);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:8px}
+.good{color:var(--good)}
+.warn{color:var(--warn)}
+.stat{font-size:28px;font-weight:800;line-height:1.2}
+.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:11px 14px;font-size:14px;line-height:1.5;margin:6px 6px 0 0;background:var(--bg);cursor:pointer}
+.pill.on{background:var(--pri);color:var(--pri-ink);border-color:var(--pri);font-weight:700}
+.seg{display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:4px}
+.seg button{flex:1;border:0;border-radius:0;background:var(--card);padding:9px 0;min-width:0}
+.seg button.on{background:var(--pri);color:var(--pri-ink);font-weight:700}
+.score{font-size:44px;font-weight:800;line-height:1.1}
+.parts{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin-top:10px;font-size:14px}
+.parts b{text-align:right}
+.item{border-top:1px solid var(--line);padding:12px 0}
+.item:first-child{border-top:0;padding-top:0}
+.item:last-child{padding-bottom:0}
+.tblwrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:8px 4px;text-align:center;white-space:nowrap}
+.tbl th:first-child,.tbl td:first-child{text-align:left;white-space:normal}
+.toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:14px;z-index:20;max-width:90vw}
+code.link{display:block;word-break:break-all;background:var(--bg);border:1px dashed var(--line);border-radius:8px;padding:8px;font-size:12px;max-height:88px;overflow:auto}
+details summary{cursor:pointer}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<nav id="nav"></nav>
+<script>
+'use strict';
+/* ============================================================
+   ズレ帳（仮） — メタ認知を鍛えるアプリ（プロトタイプ）
+   核：予想する → 答え合わせする → ズレを見る
+   保存：この端末の localStorage のみ。サーバーなし。
+   仕様・設計判断は HANDOFF.md を参照。
+   ============================================================ */
+
+const KEY = 'zure-v1';
+const ITEMSET = 'i1';           // 見え方の項目セットの版。変えたら上げる（リンクの互換性に使う）
+const ITEMS = [
+  { id: 'listen', t: '相手の話を最後まで聞く' },
+  { id: 'start',  t: '自分から話しかける' },
+  { id: 'face',   t: '気持ちが顔や態度に出る' },
+  { id: 'notice', t: '相手の変化に気づく' },
+  { id: 'keep',   t: '約束や時間を守る' },
+  { id: 'say',    t: '自分の意見をはっきり言う' },
+  { id: 'fit',    t: '場の空気に合わせる' },
+  { id: 'admit',  t: '自分の間違いを認める' },
+  { id: 'rely',   t: '人に頼る・相談する' },
+  { id: 'calm',   t: '落ち着いて見える' }
+];
+// かんたんモードの予想。どれも「起きたかどうかが後から見て分かる」形にしてある（判定の基準を兼ねる）
+// {n} には数字が入る（u が単位）。曖昧な型（「うまくいく」等）は入れないこと
+const TOPICS = [
+  { k: '連絡',           ts: [{ t: '{n}時間以内に返信が来る', u: '時間' }, { t: '今日中に返信が来る' }, { t: '向こうから連絡が来る' }] },
+  { k: '会議・打ち合わせ', ts: [{ t: '{n}分で終わる', u: '分' }, { t: 'その場で結論が出る' }, { t: '自分の意見を1回は言える' }] },
+  { k: '初対面',         ts: [{ t: '{n}分以上、会話が続く', u: '分' }, { t: '相手から質問が来る' }, { t: '連絡先を交換する' }] },
+  { k: '約束・予定',      ts: [{ t: '時間どおりに始まる' }, { t: '予定どおりに終わる' }, { t: '相手が{n}分以上遅れる', u: '分' }] },
+  { k: '作業',           ts: [{ t: '{n}分で終わる', u: '分' }, { t: '今日中に終わる' }, { t: '途中で止まらずにやり切れる' }] },
+  { k: '人との会話',      ts: [{ t: '相手が笑う' }, { t: '相手から質問が来る' }, { t: '相手の話を最後まで遮らずに聞ける' }] }
+];
+// 記録した場面（自由な名前）から予想を作る時の型
+const GENERIC_TS = [{ t: '{n}分以上続く', u: '分' }, { t: '{n}分で終わる', u: '分' }, { t: '相手から質問が来る' }, { t: '相手が笑う' }, { t: '前回より長く続く' }];
+// 「状況」欄に入ると推測っぽい言葉（注意を出すだけ。保存は止めない）
+// ※「はず」は「はずれた／はずかしい」を拾わないよう、直後の字を除外。後読み(?<=)はiOS 16.3以前で構文エラーになるので使わない
+const GUESS_WORDS = /(楽しそう|嬉しそう|うれしそう|嫌そう|いやそう|怒ってそう|つまらなそう|たぶん|多分|と思う|気がする|みたい|っぽい|はず(?![れかすし])|だろう|感じた|感じがした)/g;
+const PEER_MAX = 5;                  // 1つの予想に取り込める「人の答え合わせ」の数
+const PRED_DELETE_MS = 60 * 60000;   // 予想を削除できるのは作成から1時間以内（打ち間違い用）。外れを消して点数を盛れないように
+
+const blank = () => ({ v: 1, preds: [], logs: [], checkins: [], reflections: [], mirror: null, timers: [], prefs: { pmode: 'easy' } });
+let S;
+// 保存データの形を必ず整える（壊れた／細工されたバックアップで、アプリが開かなくなったり画面にコードを仕込まれたりしないように）
+function normalize(o) {
+  const n = blank();
+  if (!o || typeof o !== 'object') return n;
+  const str = (v, max) => (['string','number','boolean'].includes(typeof v) ? String(v) : '').slice(0, max);
+  const number = v => typeof v === 'number' || typeof v === 'string' ? Number(v) : NaN;
+  const num = (v, lo, hi, d) => { v = number(v); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+  const ts = v => num(v, 0, 8.64e15, Date.now());
+  const idOk = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(v);
+  const dayOk = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  const CONFS = [50, 55, 60, 65, 70, 75, 80, 85, 90, 95];
+  const sc = x => { const r = {}; for (const it of ITEMS) { const v = number((x || {})[it.id]); if (!Number.isInteger(v) || v < 1 || v > 5) return null; r[it.id] = v; } return r; };
+  if (Array.isArray(o.preds)) n.preds = o.preds.filter(p => p && idOk(p.id)).map(p => ({
+    id: String(p.id), created: ts(p.created), what: str(p.what, 80), expect: str(p.expect, 120), crit: str(p.crit, 200),
+    conf: CONFS.includes(number(p.conf)) ? number(p.conf) : 70, mode: p.mode === 'free' ? 'free' : 'easy',
+    result: p.result && typeof p.result === 'object' ? { hit: !!p.result.hit, void: !!p.result.void, note: str(p.result.note, 300), at: ts(p.result.at) } : null,
+    // 人の答え合わせ。self は「人の判定を見た時点の自分の判定」（null＝まだ自分が答え合わせしていないので非表示）
+    peers: (Array.isArray(p.peers) ? p.peers : []).filter(x => x && idOk(x.id)).slice(0, PEER_MAX).map(x => ({
+      id: String(x.id), from: str(x.from, 30), hit: x.hit === true || x.hit === false ? x.hit : null, note: str(x.note, 300), at: ts(x.at),
+      self: ['hit', 'miss', 'void'].includes(x.self) ? x.self : null })) }));
+  if (Array.isArray(o.logs)) n.logs = o.logs.filter(l => l && idOk(l.id)).map(l => ({
+    id: String(l.id), at: ts(l.at), date: dayOk(l.date) ? String(l.date) : dayOf(ts(l.at)), scene: str(l.scene, 30),
+    fact: str(l.fact, 500), score: Math.round(num(l.score, 1, 5, 3)), note: str(l.note, 300) }));
+  if (Array.isArray(o.checkins)) n.checkins = [...new Set(o.checkins.filter(dayOk).map(String))];
+  if (Array.isArray(o.reflections)) n.reflections = o.reflections.filter(r => r && r.key).map(r => ({ key: str(r.key, 120), q: str(r.q, 200), a: str(r.a, 500), at: ts(r.at) }));
+  if (Array.isArray(o.timers)) {
+    let running = false;   // 計測中は1つだけ
+    n.timers = o.timers.filter(t => t && idOk(t.id)).map(t => ({
+      id: String(t.id), task: str(t.task, 40), est: Math.round(num(t.est, 1, 9999, 1)), created: ts(t.created), accMs: num(t.accMs, 0, 1e12, 0),
+      runningSince: t.runningSince ? ts(t.runningSince) : null,
+      done: t.done && typeof t.done === 'object' ? { actual: num(t.done.actual, 0, 1e7, 0), at: ts(t.done.at), note: str(t.done.note, 300) } : null,
+      cancelled: t.cancelled ? ts(t.cancelled) : null
+    })).filter(t => t.done || t.cancelled || (running ? false : (running = true)));
+  }
+  if (o.mirror && typeof o.mirror === 'object' && idOk(o.mirror.id)) {
+    const self = sc(o.mirror.self), guess = sc(o.mirror.guess);
+    if (self && guess) n.mirror = { id: String(o.mirror.id), created: ts(o.mirror.created), self, guess,
+      responses: (Array.isArray(o.mirror.responses) ? o.mirror.responses : [])
+        .map(r => r && typeof r === 'object' ? { id: str(r.id, 40), from: str(r.from, 30), at: ts(r.at), scores: sc(r.scores), good: str(r.good, 300) } : null)
+        .filter(r => r && r.scores) };
+  }
+  if (o.prefs && ['easy', 'free', 'time'].includes(o.prefs.pmode)) n.prefs.pmode = o.prefs.pmode;
+  return n;
+}
+function load() {
+  try { S = normalize(JSON.parse(localStorage.getItem(KEY) || '{}')); }
+  catch (e) { S = blank(); }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch (e) {
+    // 呼び出し側の成功表示・画面遷移を止め、入力欄はそのまま残す。
+    load();
+    throw new Error('保存できませんでした。入力は画面に残っています。空き容量やブラウザ設定を確認して再試行してください');
+  }
+}
+
+/* ---------- 小道具 ---------- */
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad = n => String(n).padStart(2, '0');
+const dayOf = ts => { const d = new Date(ts); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+const today = () => dayOf(Date.now());
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+const base = () => location.origin + location.pathname;
+function b64u(s) { return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+function unb64u(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); s += '='.repeat((4 - s.length % 4) % 4); return decodeURIComponent(escape(atob(s))); }
+function ago(ts) { const d = Math.floor((Date.now() - ts) / 86400000); return d <= 0 ? '今日' : d === 1 ? '昨日' : d + '日前'; }
+let toastT;
+function toast(m) {
+  let el = $('.toast');
+  if (!el) { el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); document.body.appendChild(el); }
+  el.textContent = m; el.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 2000);
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); toast('コピーしました'); }
+  catch (e) {
+    const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast('コピーしました'); } catch (_) { toast('コピーできませんでした'); }
+    ta.remove();
+  }
+}
+function download(name, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function readScale(name) {
+  const b = document.querySelector(`.scale[data-name="${name}"] button.on`);
+  return b ? +b.dataset.v : 0;
+}
+function scale(name, val, label) {
+  return `<div class="scale" data-name="${name}" role="group" aria-label="${esc(label || name)}">${[1, 2, 3, 4, 5].map(v =>
+    `<button type="button" data-act="pick" data-v="${v}" class="${val === v ? 'on' : ''}" aria-pressed="${val === v}">${v}</button>`).join('')}</div>`;
+}
+const legend = (a, b) => `<div class="legend"><span>1 ${a}</span><span>5 ${b}</span></div>`;
+// 選択肢はbutton（キーボードで押せる・読み上げで状態が分かる）
+const chip = (act, v, on, label) => `<button type="button" class="pill ${on ? 'on' : ''}" data-act="${act}" data-v="${esc(v)}" aria-pressed="${!!on}">${esc(label ?? v)}</button>`;
+// 全角数字を半角に（自由入力をそのまま数値にしない）
+const normDigits = s => String(s || '').replace(/[０-９]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0)).trim();
+const hasGuess = txt => !!String(txt || '').match(GUESS_WORDS);
+function confBlock() {
+  return `<label for="conf">どれくらい自信がある？ <span id="confv">70%</span></label>
+    <input type="range" id="conf" min="50" max="95" step="5" value="70">
+    <p class="muted">50%＝五分五分。「絶対」はないので95%まで。</p>`;
+}
+function linkBox(url, msg) {
+  return `<code class="link">${esc(url)}</code>
+  <div class="row" style="margin-top:8px">
+    <button data-act="copy" data-text="${esc(url)}">コピー</button>
+    <a class="btn" href="https://line.me/R/msg/text/?${encodeURIComponent(msg + '\n' + url)}" target="_blank" rel="noopener">LINEで送る</a>
+    ${navigator.share ? `<button data-act="share" data-text="${esc(msg)}" data-url="${esc(url)}">共有…</button>` : ''}
+  </div>`;
+}
+
+/* ---------- 集計 ---------- */
+function activityDays() {
+  const s = new Set(S.checkins);
+  S.logs.forEach(l => s.add(l.date));
+  S.preds.forEach(p => { s.add(dayOf(p.created)); if (p.result) s.add(dayOf(p.result.at)); });
+  S.timers.forEach(t => { s.add(dayOf(t.created)); if (t.done) s.add(dayOf(t.done.at)); });
+  return s;
+}
+const daysRecorded = () => activityDays().size;
+const touchedToday = () => activityDays().has(today());
+function calib() {
+  const r = S.preds.filter(p => p.result && !p.result.void);   // 「起きなかった」は点数に入れない
+  if (r.length < 5) return { n: r.length, ready: false };
+  const avgConf = avg(r.map(p => p.conf));
+  const hit = r.filter(p => p.result.hit).length / r.length * 100;
+  // 自信の値（5%刻み）ごとに比べる。帯でまとめると、50%での控えめと65%での強気が打ち消し合って満点になってしまう
+  const rows = [...new Set(r.map(p => p.conf))].sort((a, b) => a - b).map(conf => {
+    const b = r.filter(p => p.conf === conf);
+    return { conf, n: b.length, rate: b.filter(p => p.result.hit).length / b.length * 100 };
+  });
+  // ズレの大きさ（ポイント）。件数が少ない値は、見立てが正確でも偶然ずれる。その偶然の分（f(1-f)/n）を差し引く
+  // → 1件ずつの予想でも、正確な人が不当に低くならない。自信50%の予想は当たっても外れてもズレ0になる
+  const sq = rows.reduce((a, b) => { const f = b.conf / 100, o = b.rate / 100; return a + (b.n * (f - o) ** 2 - f * (1 - f)) / r.length; }, 0);
+  return { n: r.length, ready: true, avgConf, hit, diff: avgConf - hit, rows, err: 100 * Math.sqrt(Math.max(0, sq)) };
+}
+// 人の答え合わせと、自分の判定の比べ合わせ。比べるのは「人の判定を見る前の自分の判定」
+// → 人の判定を見てから自分の判定を直しても、一致は増えない
+const selfMark = r => !r ? null : r.void ? 'void' : r.hit ? 'hit' : 'miss';
+function peerStats() {
+  const cs = S.preds.flatMap(p => (p.peers || []).filter(x => x.self && x.hit != null));
+  return { n: cs.length,
+    agree: cs.filter(x => x.self !== 'void' && (x.self === 'hit') === x.hit).length,
+    lenient: cs.filter(x => x.self === 'hit' && !x.hit).length,    // 自分は当たった、人は外れた
+    strict: cs.filter(x => x.self === 'miss' && x.hit).length,     // 自分は外れた、人は当たった
+    voided: cs.filter(x => x.self === 'void').length };            // 自分は「起きなかった」、人は判定した
+}
+// 同じ場面が3回たまったら、アプリが「問い」を出す（答えは本人が書く）。うまくいった側を先に聞く
+function pendingQuestion() {
+  const by = Object.create(null);
+  S.logs.forEach(l => { if (l.scene) (by[l.scene] = by[l.scene] || []).push(l); });
+  for (const [tag, ls] of Object.entries(by)) {
+    const high = ls.filter(l => l.score >= 4).length, low = ls.filter(l => l.score <= 2).length;
+    const cands = [];
+    if (high >= 3) cands.push({ key: `high:${tag}:${Math.floor(high / 3)}`, q: `「${tag}」でうまくいった回が${high}回あります。何がうまくいっていると思いますか？` });
+    if (low >= 3) cands.push({ key: `low:${tag}:${Math.floor(low / 3)}`, q: `「${tag}」で総評が低い回が${low}回あります。共通しているのは何だと思いますか？` });
+    for (const c of cands) if (!S.reflections.some(r => r.key === c.key)) return c;
+  }
+  return null;
+}
+function recentTags() {
+  const seen = []; [...S.logs].sort((a, b) => b.at - a.at).forEach(l => { if (l.scene && !seen.includes(l.scene)) seen.push(l.scene); });
+  return seen.slice(0, 8);
+}
+const SPLIT_SD = 1.5;   // 回答のばらつき（標準偏差）がこれ以上なら「割れている」。1と4、2と5、1・3・5 など
+function mirrorStats(m) {
+  const n = m.responses.length; if (!n) return null;
+  const rows = ITEMS.map(it => {
+    const vs = m.responses.map(r => r.scores[it.id]), act = avg(vs);
+    // 意見が割れている項目（例：1と5）は平均が真ん中に寄るだけで、予想が当たったかを判定できない
+    const split = n >= 2 && Math.sqrt(avg(vs.map(v => (v - act) ** 2))) >= SPLIT_SD;
+    return { it, self: m.self[it.id], guess: m.guess[it.id], act, split, dSelf: act - m.self[it.id], dGuess: Math.abs(act - m.guess[it.id]) };
+  });
+  const ok = rows.filter(r => !r.split);
+  return { n, rows, split: rows.length - ok.length, gErr: ok.length ? avg(ok.map(r => r.dGuess)) : null };
+}
+
+/* ---------- メタ認知スコア ----------
+   原則：外の基準（後から起きた事実・人の評価）と比べられる部分だけで出す。
+   自分で付けた総評そのものは入れない → 高めに付けても点は上がらない（盛っても得をしない）。 */
+function metaScore() {
+  const parts = [];
+  // 予想の精度：自信の値ごとの「自信」と「実際」の差（calib().err）。0差=100、50ポイント差=0。
+  // ※ブライアースコアは「言い切る鋭さ」も評価してしまうので使わない。測りたいのは自信の正確さだけ
+  //   （難しいことに正直に50〜60%を付ける人が、簡単なことだけ予想する人より低くなってしまう）
+  const c = calib();
+  parts.push({ k: '予想の精度', need: '答え合わせ5件', v: c.ready ? clamp(100 - 2 * c.err) : null });
+  // 見え方の精度：見え方の予想と、人の評価のズレ（平均）。0=100、1点=50、2点以上=0。意見が割れた項目は入れない
+  const st = S.mirror && mirrorStats(S.mirror);
+  parts.push({ k: '見え方の精度', need: st ? '回答が割れていて判定できません' : '見え方の回答1人', v: st && st.gErr != null ? clamp(100 - 50 * st.gErr) : null });
+  // 事実と解釈を分ける力：状況に推測っぽい言葉が入っていない記録の割合（言葉で判定する目安）
+  parts.push({ k: '事実と解釈を分ける', need: '記録5件', v: S.logs.length >= 5 ? clamp(100 * S.logs.filter(l => !hasGuess(l.fact)).length / S.logs.length) : null });
+  // 時間の見積もり：タイマーで実測するので、自己申告が入らない
+  const ts = timeStats();
+  parts.push({ k: '時間の見積もり', need: '計測3件', v: ts.ready ? ts.score : null });
+  // 答え合わせの一致：自分の判定（自己申告）が、見ていた人の判定と合っているか。「起きなかった」にしたものは不一致
+  const ps = peerStats();
+  parts.push({ k: '答え合わせの一致', need: '人の答え合わせ3件', v: ps.n >= 3 ? clamp(100 * ps.agree / ps.n) : null });
+  const got = parts.filter(p => p.v != null);
+  return { parts, total: got.length ? Math.round(avg(got.map(p => p.v))) : null };
+}
+const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
+
+/* ---------- 時間の見積もり ----------
+   経過時間は開始時刻から計算する（setIntervalで数えない）→ アプリを閉じても、画面が裏に回っても正しい。
+   t = {id, task, est(分), created, accMs(止めるまでに溜まった分), runningSince(計測中なら開始時刻/止めていればnull), done:null|{actual(分), at, note}} */
+// 取り消した計測は消さずに cancelled で残す（見積もりを超えそうな時に取り消して、外れを隠せないように。件数を表示する）
+const runningTimer = () => S.timers.find(t => !t.done && !t.cancelled);
+// ロック待ち中に別タブで計測が切り替わっても、クリック時の対象だけを操作する。
+function timerForAction(button) {
+  const timer = runningTimer();
+  if (button && (!timer || button.dataset.id !== timer.id ||
+      (button.dataset.running != null && (button.dataset.running === '1') !== !!timer.runningSince))) {
+    render(); toast('計測が別のタブで更新されました。画面を確認してください'); return null;
+  }
+  return timer;
+}
+// 端末の時計を戻されてもマイナスにしない
+const elapsedMs = t => Math.max(0, t.accMs + (t.runningSince ? Math.max(0, Date.now() - t.runningSince) : 0));
+function fmtMS(ms) {
+  const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+  return (h ? h + ':' + pad(m) : m) + ':' + pad(s % 60);
+}
+function fmtMin(min) {
+  if (min < 1) return Math.round(min * 60) + '秒';
+  if (min < 60) return (min < 10 ? min.toFixed(1).replace(/\.0$/, '') : Math.round(min)) + '分';
+  const rounded = Math.round(min), h = Math.floor(rounded / 60), m = rounded % 60;
+  return h + '時間' + (m ? m + '分' : '');
+}
+function ratioText(r) {
+  if (r >= 0.9 && r <= 1.1) return 'ほぼ見積もりどおりでした。';
+  return r > 1 ? `見積もりの ${r.toFixed(1)} 倍かかりました。` : `見積もりより早く終わりました（${r.toFixed(1)} 倍）。`;
+}
+function timeStats() {
+  const d = S.timers.filter(t => t.done && t.done.actual > 0 && t.est > 0);
+  if (d.length < 3) return { n: d.length, ready: false };
+  const rs = d.map(t => t.done.actual / t.est).sort((a, b) => a - b), k = rs.length;
+  // 真ん中の値：1回だけ大きく外れても引っ張られない
+  const med = k % 2 ? rs[(k - 1) / 2] : (rs[k / 2 - 1] + rs[k / 2]) / 2;
+  // 精度：倍率の対数のズレ（長め・短めを対称に扱う）。ぴったり=100、3倍（または1/3）ずれたら0
+  const err = avg(d.map(t => Math.abs(Math.log(t.done.actual / t.est))));
+  return { n: k, ready: true, med, score: clamp(100 - 100 * err / Math.log(3)) };
+}
+// 盛り癖：見え方で、自分の評価が人の評価より平均どれだけ高いか（+なら高めに見ている）
+function selfBias() {
+  const st = S.mirror && mirrorStats(S.mirror);
+  const ok = st ? st.rows.filter(r => !r.split) : [];
+  if (!ok.length) return null;
+  return { v: avg(ok.map(r => r.self - r.act)), n: st.n };
+}
+function biasText(b) {
+  if (!b || Math.abs(b.v) < 0.3) return '';
+  const who = b.n < 3 ? `（${b.n}人の回答から。まだ参考程度）` : `（${b.n}人の回答から）`;
+  return (b.v > 0 ? `人から見るより、平均 ${b.v.toFixed(1)} 高く自分を見る傾向があります`
+                  : `人から見るより、平均 ${Math.abs(b.v).toFixed(1)} 低く自分を見る傾向があります`) + who;
+}
+// 総評の偏り：10件以上たまってから
+function scoreSkew() {
+  if (S.logs.length < 10) return '';
+  const hi = S.logs.filter(l => l.score >= 4).length / S.logs.length, lo = S.logs.filter(l => l.score <= 2).length / S.logs.length;
+  if (hi >= 0.8) return `総評が高めに偏っています（4〜5が${Math.round(hi * 100)}%）。うまくいかなかった回も残せていますか？`;
+  if (lo >= 0.8) return `総評が低めに偏っています（1〜2が${Math.round(lo * 100)}%）。うまくいった回も残せていますか？`;
+  return '';
+}
+
+/* ---------- 画面 ---------- */
+let ui = { view: 'home', mstep: 1, draft: { self: {}, guess: {} }, reqLink: null, reqName: '', rate: null, rateDone: null, chk: null, chkDone: null, chkLink: null };
+function go(v) { if (v !== 'log') ui.justLogged = null; ui.view = v; render(); window.scrollTo(0, 0); }
+function render() {
+  $('#app').innerHTML = ({ home: vHome, pred: vPred, log: vLog, mirror: vMirror, data: vData, rate: vRate, check: vCheck })[ui.view]();
+  renderNav();
+}
+function renderNav() {
+  const nav = $('#nav');
+  if (ui.view === 'rate' || ui.view === 'check') { nav.hidden = true; return; }
+  nav.hidden = false;
+  const tabs = [['home', '⌂', 'ホーム'], ['pred', '◎', '予想'], ['log', '✎', '記録'], ['mirror', '◐', '見え方'], ['data', '⚙', 'データ']];
+  nav.innerHTML = tabs.map(([v, ic, l]) => `<button data-go="${v}" class="${ui.view === v ? 'on' : ''}"><span class="ic">${ic}</span>${l}</button>`).join('');
+}
+
+function vHome() {
+  const c = calib(), q = pendingQuestion(), m = S.mirror, open = S.preds.filter(p => !p.result).length;
+  const lines = [];
+  if (c.ready) lines.push(`予想：自信 ${Math.round(c.avgConf)}% ／ 実際 ${Math.round(c.hit)}%`);
+  else if (c.n) lines.push(`予想：答え合わせ ${c.n}件（5件でズレが出ます）`);
+  if (S.logs.length) lines.push(`記録：${S.logs.length}件${q ? '・<b>問いが1つあります</b>' : ''}`);
+  if (m) lines.push(`見え方：回答 ${m.responses.length}人`);
+  const tst = timeStats();
+  if (tst.ready) lines.push(`時間：実際は見積もりの ${tst.med.toFixed(1)} 倍`);
+  else if (tst.n) lines.push(`時間：計測 ${tst.n}件（3件で傾向が出ます）`);
+  const run = runningTimer();
+  const ms = metaScore(), bt = biasText(selfBias());
+  return `
+  <h1>ズレ帳<span class="muted">（仮）</span></h1>
+  <p class="muted" style="margin-top:-8px">予想して、答え合わせして、ズレを見る。</p>
+  ${run ? `<div class="card" style="border-color:var(--pri)">
+    <div class="muted">${run.runningSince ? '計測中' : '一時停止中'}：${esc(run.task)}</div>
+    <div class="stat" id="elapsed">${fmtMS(elapsedMs(run))}</div>
+    <button class="pri block" data-act="openTimer" style="margin-top:8px">開く</button>
+  </div>` : ''}
+  <div class="card">
+    <div class="muted">メタ認知スコア</div>
+    ${ms.total != null ? `<div class="score">${ms.total}<span class="muted" style="font-size:16px"> / 100</span></div>`
+      : `<p style="margin:6px 0 0">まだ出せません。<b>答え合わせ5件</b>・<b>見え方の回答1人</b>・<b>記録5件</b>・<b>時間の計測3件</b>・<b>人の答え合わせ3件</b>のどれかがたまると出ます。</p>`}
+    <div class="parts">${ms.parts.map(p => `<span>${p.k}</span><b>${p.v != null ? p.v : `<span class="muted small">— ${p.need}</span>`}</b>`).join('')}</div>
+    ${bt ? `<div class="hint">見え方の結果より：${bt}</div>` : ''}
+    <details style="margin-top:8px"><summary class="muted small">この点数の出し方</summary>
+      <p class="small">予想の答え合わせ（自己申告）と人による答え合わせとの一致、人からの回答、記録の言葉、時間の見積もりから作る<b>練習用の目安</b>です。メタ認知能力そのものを測定・検証した点数ではありません。<br>
+      自分で付けた「総評」は点数に入りません。推測語のチェックは、事実かどうかを判定するものではありません。<br>
+      データが少ない間は値が振れやすく、内訳が増えた時も合計は変わります。前回との比較は同じ内訳で見てください。</p>
+    </details>
+  </div>
+  <div class="row">
+    <div class="card"><div class="muted">記録した日</div><div class="stat">${daysRecorded()}<span class="muted"> 日</span></div></div>
+    <div class="card"><div class="muted">答え合わせ待ち</div><div class="stat">${open}<span class="muted"> 件</span></div></div>
+  </div>
+  ${lines.length ? `<div class="card"><div class="muted">いまの状態</div>${lines.map(l => `<div>${l}</div>`).join('')}</div>` : ''}
+  <div class="card">
+    <button class="pri block" data-go="pred">◎ 予想する</button>
+    <p class="muted">これから起きることを予想して、あとで答え合わせ。自信と実際のズレが分かります。</p>
+    <button class="pri block" data-go="log">✎ 記録する</button>
+    <p class="muted">起きたことと、自分の評価を分けて残す。溜まると自分の傾向が見えてきます。</p>
+    <button class="pri block" data-go="mirror">◐ 見え方を聞く</button>
+    <p class="muted">人からどう見えているかを、先に予想してから聞く。</p>
+    <button class="pri block" data-act="openTimer">⏱ 時間を測る</button>
+    <p class="muted" style="margin-bottom:0">作業に何分かかるかを予想して、タイマーで答え合わせ。いちばん手軽です。</p>
+  </div>
+  ${touchedToday() ? '' : `<div class="card"><button class="block" data-act="checkin">今日は記録なし</button><p class="muted" style="margin-bottom:0">書くことがない日も、開いたことは残ります。</p></div>`}
+  <details class="card"><summary><b>このアプリの考え方</b></summary>
+    <p>自分のことは、自分では見えにくいものです。見えるようにする方法は、<b>予想して、答え合わせする</b>こと。外れた分が、そのまま自分の見立てのズレです。</p>
+    <ul>
+      <li>「状況」には起きたことだけ。感想は「総評」へ分ける</li>
+      <li>当たったかより、<b>なぜそうなったと思うか</b>を残す</li>
+      <li>うまくいったことも、同じように残す</li>
+      <li>集計はアプリがやります。答えは出しません</li>
+      <li>データはこの端末のブラウザにだけ保存されます</li>
+    </ul>
+  </details>`;
+}
+
+function vPred() {
+  const mode = ui.pmode || S.prefs.pmode || 'easy';
+  return `<h1>予想する</h1>
+  <div class="seg">${[['easy', 'かんたん'], ['free', '自由に書く'], ['time', '時間']].map(([k, l]) => `<button data-act="pmode" data-v="${k}" class="${mode === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+  ${mode === 'time' ? timeView() : mode === 'easy' ? easyForm() : freeForm()}
+  ${mode === 'time' ? '' : predLists()}`;
+}
+function timeView() {
+  const run = runningTimer(), ts = timeStats();
+  const done = S.timers.filter(t => t.done).sort((a, b) => b.done.at - a.done.at);
+  const jf = ui.justFinished && S.timers.find(t => t.id === ui.justFinished && t.done);
+  const tasks = [...new Set(done.map(t => t.task))].slice(0, 6);
+  let html = '';
+  if (jf) {
+    html += `<div class="card" style="border-color:var(--pri)">
+      <div class="muted">「${esc(jf.task)}」の答え合わせ</div>
+      <div class="row">
+        <div><div class="muted">見積もり</div><div class="stat">${fmtMin(jf.est)}</div></div>
+        <div><div class="muted">実際</div><div class="stat">${fmtMin(jf.done.actual)}</div></div>
+      </div>
+      <p><b>${ratioText(jf.done.actual / jf.est)}</b></p>
+      <label for="tnote">なぜズレたと思う？ <span class="muted">（任意）</span></label>
+      <textarea id="tnote" maxlength="300"></textarea>
+      <button class="pri block" data-act="tNote" style="margin-top:8px">残す</button>
+    </div>`;
+  }
+  if (run) {
+    html += `<div class="card" style="border-color:var(--pri)">
+      <div class="muted">${run.runningSince ? '計測中' : '一時停止中'}</div>
+      <p style="margin:4px 0"><b>${esc(run.task)}</b> <span class="muted">見積もり ${run.est}分</span></p>
+      <div class="score" id="elapsed">${fmtMS(elapsedMs(run))}</div>
+      <div class="row" style="margin-top:12px">
+        <button data-act="tPause" data-id="${run.id}" data-running="${run.runningSince ? '1' : '0'}">${run.runningSince ? '一時停止' : '再開'}</button>
+        <button class="pri" data-act="tDone" data-id="${run.id}">終わった</button>
+      </div>
+      <button class="block small danger" data-act="tCancel" data-id="${run.id}" style="margin-top:8px">取り消す</button>
+      <p class="muted small" style="margin-bottom:0">アプリを閉じても、計測は続きます。</p>
+    </div>`;
+  } else {
+    html += `<div class="card">
+      <label for="tt" style="margin-top:0">何の作業？</label>
+      <input type="text" id="tt" maxlength="40" placeholder="例：資料を1枚つくる">
+      ${tasks.length ? `<div>${tasks.map(t => chip('tTask', t, false)).join('')}</div>` : ''}
+      <div id="tref"></div>
+      <label for="te">何分かかると思う？</label>
+      <div style="display:flex;align-items:center;gap:8px"><input type="text" id="te" inputmode="numeric" maxlength="4" style="width:110px"><span>分</span></div>
+      <button class="pri block" data-act="tStart" style="margin-top:14px">スタート</button>
+      <p class="muted small" style="margin-bottom:0">見積もってから始めて、終わったら「終わった」を押すだけ。開始・一時停止・終了の操作から時間を計算します。</p>
+    </div>`;
+  }
+  html += `<h2>見積もりのクセ</h2>`;
+  const cancelled = S.timers.filter(t => t.cancelled).length;
+  if (cancelled) html += `<p class="muted small">取り消した計測：${cancelled}件（点数には入れていません）</p>`;
+  html += ts.ready ? `<div class="card">
+      <div class="muted">実際にかかる時間は、見積もりの</div>
+      <div class="stat">${ts.med.toFixed(1)} 倍</div>
+      <p style="margin-bottom:0"><b>${ts.med > 1.15 ? '見積もりより長くかかる傾向があります。' : ts.med < 0.87 ? '見積もりより早く終わる傾向があります。' : '見積もりがほぼ合っています。'}</b></p>
+      <p class="muted small" style="margin-bottom:0">真ん中の値で出しています（1回だけ大きく外れても、引っ張られないように）。</p>
+    </div>` : `<div class="card"><p class="muted" style="margin:0">計測が3件たまると表示されます（いま${ts.n}件）。</p></div>`;
+  if (done.length) html += `<h2>計測した作業（${done.length}）</h2><div class="card"><div class="tblwrap"><table class="tbl">
+      <tr><th>作業</th><th>見積</th><th>実際</th><th>倍率</th></tr>
+      ${done.slice(0, 20).map(t => `<tr><td>${esc(t.task)}${t.done.note ? `<div class="muted small">${esc(t.done.note)}</div>` : ''}</td><td>${t.est}分</td><td>${fmtMin(t.done.actual)}</td><td>${(t.done.actual / t.est).toFixed(1)}</td></tr>`).join('')}
+    </table></div></div>`;
+  return html;
+}
+function taskRef(task) {
+  const last = S.timers.filter(t => t.done && t.task === task).sort((a, b) => b.done.at - a.done.at)[0];
+  return last ? `<div class="hint">前回の「${esc(task)}」：見積もり ${last.est}分 → 実際 ${fmtMin(last.done.actual)}</div>` : '';
+}
+function predLists() {
+  const open = S.preds.filter(p => !p.result).sort((a, b) => b.created - a.created);
+  const done = S.preds.filter(p => p.result).sort((a, b) => b.result.at - a.result.at);
+  const voids = done.filter(p => p.result.void).length;
+  return `
+  <h2>答え合わせ待ち（${open.length}）</h2>
+  ${open.length ? `<div class="card">${open.map(predItem).join('')}</div>` : '<p class="muted">まだありません。</p>'}
+  <h2>自信と実際のズレ</h2>
+  ${calibCard(calib())}
+  ${peerCard()}
+  ${done.length ? `<h2>答え合わせ済み（${done.length}）</h2>
+    ${voids ? `<p class="muted small">うち「起きなかった」${voids}件は、点数に入れていません。</p>` : ''}
+    <div class="card">${done.slice(0, 30).map(p => `
+    <div class="item" data-pid="${p.id}">
+      <div><b>${esc(p.what)}</b> <span class="muted">${ago(p.created)}・自信${p.conf}%</span></div>
+      <div>${esc(p.expect)} → ${p.result.void ? '<b class="muted">起きなかった</b>'
+        : `<b class="${p.result.hit ? 'good' : 'warn'}">${p.result.hit ? '当たった' : '外れた'}</b>`}</div>
+      ${p.result.note ? `<div class="muted">なぜ：${esc(p.result.note)}</div>` : ''}
+      ${peerLines(p)}
+      <button data-act="reopenPred" class="small" style="margin-top:6px;padding:4px 10px">判定をやり直す</button>
+      <button data-act="chkLink" class="small" style="margin-top:6px;padding:4px 10px">人に答え合わせを頼む</button>
+      ${chkLinkBox(p)}
+    </div>`).join('')}</div>` : ''}
+  ${S.preds.length ? `<details class="card"><summary><b>人からの答え合わせを取り込む</b></summary>
+    <textarea id="chkin" placeholder="返信リンクを貼り付け" style="margin-top:8px"></textarea>
+    <button class="block" data-act="chkImport" style="margin-top:8px">取り込む</button>
+    <p class="muted small" style="margin-bottom:0">返信リンクを開くと、自動で取り込まれます。LINEの中で開いた時は、コピーしてここに貼り付けてください。</p>
+  </details>` : ''}`;
+}
+function topicTemplates(topic) {
+  const t = TOPICS.find(x => x.k === topic);
+  return t ? t.ts : GENERIC_TS;
+}
+function easyForm() {
+  const topic = ui.ptopic, tlist = topic ? topicTemplates(topic) : null;
+  const tpl = tlist && ui.ptpl != null ? tlist[ui.ptpl] : null;
+  const scenes = recentTags().filter(s => !TOPICS.some(t => t.k === s)).slice(0, 6);
+  const last = topic ? [...S.logs].filter(l => l.scene === topic).sort((a, b) => b.at - a.at)[0] : null;
+  return `<div class="card">
+    <p class="muted" style="margin-top:0">選ぶだけで予想が作れます。どれも「あとで見て、そうなったか分かる」形です。</p>
+    <label style="margin-top:0">何について？</label>
+    <div>${TOPICS.map(t => chip('ptopic', t.k, topic === t.k)).join('')}</div>
+    ${scenes.length ? `<div class="muted small" style="margin-top:10px">記録した場面から</div><div>${scenes.map(s => chip('ptopic', s, topic === s)).join('')}</div>` : ''}
+    ${topic ? `<label>どうなると思う？</label>
+      ${last ? `<div class="hint" style="margin:0 0 4px">前回の「${esc(topic)}」：${esc(last.fact)}（総評 ${last.score}）</div>` : ''}
+      <div>${tlist.map((x, i) => chip('ptpl', i, ui.ptpl === i, x.t.replace('{n}', '◯'))).join('')}</div>` : ''}
+    ${tpl && tpl.u ? `<label for="pn">◯に入る数字</label>
+      <div style="display:flex;align-items:center;gap:8px"><input type="text" id="pn" inputmode="numeric" maxlength="4" style="width:110px"><span>${tpl.u}</span></div>` : ''}
+    ${tpl ? confBlock() + `<button class="pri block" data-act="addEasy">予想を残す</button>
+      <p class="muted small" style="margin-bottom:0">「書いたとおりになったか」で、あとで答え合わせします。</p>` : ''}
+  </div>`;
+}
+function freeForm() {
+  return `<div class="card">
+    <label for="pw" style="margin-top:0">何について？</label>
+    <input type="text" id="pw" maxlength="80" placeholder="例：明日の打ち合わせ">
+    <label for="pe">どうなると思う？</label>
+    <input type="text" id="pe" maxlength="120" placeholder="例：30分で結論が出る">
+    <label for="pc">何が起きたら「当たり」とする？</label>
+    <input type="text" id="pc" maxlength="120" placeholder="例：10:30までに終わっていたら当たり">
+    <p class="muted small">先に決めておくと、あとで都合よく解釈できなくなります。</p>
+    ${confBlock()}
+    <button class="pri block" data-act="addPred">予想を残す</button>
+  </div>`;
+}
+function predItem(p) {
+  return `<div class="item" data-pid="${p.id}">
+    <div><b>${esc(p.what)}</b> <span class="muted">${ago(p.created)}・自信${p.conf}%</span></div>
+    <div>${esc(p.expect)}</div>
+    ${p.crit ? `<div class="muted small">当たりの基準：${esc(p.crit)}</div>` : ''}
+    ${peerLines(p)}
+    ${p.peers.some(x => !x.self) ? `<div class="hint">${p.peers.filter(x => !x.self).length}人から答え合わせが届いています。<b>自分の答え合わせをすると見られます</b>（先に見ると、自分の判定が引っ張られるため）。</div>` : ''}
+    <div class="row" style="margin-top:8px">
+      <button data-act="resolve" data-hit="1">当たった</button>
+      <button data-act="resolve" data-hit="0">外れた</button>
+    </div>
+    <div style="margin-top:6px">
+      ${Date.now() - p.created < PRED_DELETE_MS
+        ? `<button data-act="delPred" class="small" style="padding:4px 10px">削除</button> <span class="muted small">作ってから1時間は削除できます（打ち間違い用）</span>`
+        : `<button data-act="voidPred" class="small" style="padding:4px 10px">起きなかった</button> <span class="muted small">点数には入らず、件数だけ残ります</span>`}
+    </div>
+    <button data-act="chkLink" class="small" style="margin-top:6px;padding:4px 10px">人に答え合わせを頼む</button>
+    ${chkLinkBox(p)}
+    <div class="rsv" hidden>
+      ${p.crit ? `<p class="small" style="margin-bottom:0"><b>基準に照らして判定してください：</b>${esc(p.crit)}</p>` : ''}
+      <label>なぜそうなったと思う？ <span class="muted">（任意。書くほど、あとで役に立つ）</span></label>
+      <textarea maxlength="300"></textarea>
+      <button class="pri block" data-act="saveResolve" style="margin-top:8px">答え合わせを残す</button>
+    </div>
+  </div>`;
+}
+// 人の判定（自分が答え合わせした後のものだけ表示）
+function peerLines(p) {
+  return p.peers.filter(x => x.self).map(x => {
+    const who = x.from ? esc(x.from) + 'さん' : '相手';
+    const v = x.hit == null ? '見ていない・分からない' : x.hit ? '当たった' : '外れた';
+    const cmp = x.hit == null ? '' : x.self === 'void' ? '<span class="warn">自分は「起きなかった」</span>'
+      : (x.self === 'hit') === x.hit ? '<span class="good">一致</span>' : '<span class="warn">食い違い</span>';
+    return `<div class="small" style="margin-top:4px">${who}の判定：<b>${v}</b> ${cmp}${x.note ? `<div class="muted">「${esc(x.note)}」</div>` : ''}</div>`;
+  }).join('');
+}
+function chkLinkBox(p) {
+  if (!ui.chkLink || ui.chkLink.pid !== p.id) return '';
+  return `<div style="margin-top:8px">${linkBox(ui.chkLink.url, '予想の答え合わせをお願いします（30秒）')}
+    <p class="muted small" style="margin-bottom:0">その場を見ていた人に送ってください。<b>自分の判定と自信はリンクに入りません</b>（相手が引っ張られないように）。予想の文はリンクに入るので、送った相手と、送るのに使ったアプリ（LINEなど）からは見える可能性があります。</p></div>`;
+}
+function peerCard() {
+  const ps = peerStats();
+  if (!ps.n) return '';
+  return `<div class="card"><div class="muted">人による答え合わせ</div>
+    <div class="stat">${ps.agree}<span class="muted" style="font-size:16px"> / ${ps.n}件 一致</span></div>
+    ${ps.lenient ? `<div>自分は「当たった」、人は「外れた」：<b>${ps.lenient}件</b></div>` : ''}
+    ${ps.strict ? `<div>自分は「外れた」、人は「当たった」：<b>${ps.strict}件</b></div>` : ''}
+    ${ps.voided ? `<div>自分は「起きなかった」、人は判定した：<b>${ps.voided}件</b></div>` : ''}
+    <p class="muted small" style="margin-bottom:0">人の判定を見る前の、自分の判定と比べています。上の「自信と実際」は、自分の答え合わせのまま出しています。</p></div>`;
+}
+function calibCard(c) {
+  if (!c.ready) return `<div class="card"><p class="muted" style="margin:0">答え合わせが5件たまると表示されます（いま${c.n}件）。</p></div>`;
+  const msg = c.diff > 10 ? '自信のほうが、実際より高めです。' : c.diff < -10 ? '実際のほうが、自信より当たっています。控えめな見立てです。' : '自信と実際が、ほぼ合っています。';
+  return `<div class="card">
+    <div class="row">
+      <div><div class="muted">自信の平均</div><div class="stat">${Math.round(c.avgConf)}%</div></div>
+      <div><div class="muted">実際に当たった</div><div class="stat">${Math.round(c.hit)}%</div></div>
+    </div>
+    <p><b>${msg}</b></p>
+    <div class="tblwrap"><table class="tbl"><tr><th>自信</th><th>件数</th><th>実際に当たった</th></tr>
+    ${c.rows.map(b => `<tr><td>${b.conf}%</td><td>${b.n}</td><td>${Math.round(b.rate)}%</td></tr>`).join('')}</table></div>
+    <p class="muted" style="margin-bottom:0">「自信」と「実際」が近いほど、自分の見立てが正確です。件数が少ない行は偶然でもずれるので、点数ではその分を差し引いています。</p>
+  </div>`;
+}
+
+function vLog() {
+  const q = pendingQuestion(), tags = recentTags();
+  const recent = [...S.logs].sort((a, b) => b.at - a.at).slice(0, 15);
+  const by = Object.create(null); S.logs.forEach(l => { if (l.scene) (by[l.scene] = by[l.scene] || []).push(l.score); });
+  const sceneRows = Object.entries(by).filter(([, a]) => a.length >= 2).sort((a, b) => b[1].length - a[1].length);
+  const jl = ui.justLogged, bt = biasText(selfBias()), skew = scoreSkew();
+  return `<h1>記録する</h1>
+  ${jl && jl.scene ? `<div class="card" style="border-color:var(--pri)">
+    <p style="margin-top:0">記録しました。<b>次の「${esc(jl.scene)}」がどうなるか、予想してみますか？</b></p>
+    <p class="muted small">記録したことが、次の答え合わせの題材になります。</p>
+    <button class="pri block" data-act="predFromLog" data-scene="${esc(jl.scene)}">次を予想する</button>
+  </div>` : ''}
+  ${q ? `<div class="card" style="border-color:var(--pri)">
+    <div class="muted">問い</div><p><b>${esc(q.q)}</b></p>
+    <textarea id="qa" maxlength="500" placeholder="思いつくことを、そのまま"></textarea>
+    <button class="pri block" data-act="answerQ" data-key="${esc(q.key)}" data-q="${esc(q.q)}" style="margin-top:8px">答えを残す</button>
+    <p class="muted" style="margin-bottom:0">答えはアプリからは出しません。自分の言葉で。</p>
+  </div>` : ''}
+  <div class="card">
+    <label for="scene" style="margin-top:0">場面</label>
+    <input type="text" id="scene" maxlength="30" placeholder="例：初対面／会議／家族">
+    ${tags.length ? `<div>${tags.map(t => `<button type="button" class="pill" data-act="tag" data-t="${esc(t)}">${esc(t)}</button>`).join('')}</div>` : ''}
+    <label for="fact">状況 <span class="muted">— 起きたことだけ</span></label>
+    <textarea id="fact" maxlength="500" placeholder="例：初対面の人に話しかけたら、2分で会話が止まった"></textarea>
+    <div id="fact-hint"></div>
+    <label>総評 <span class="muted">— 自分ではどうだったと思う？</span></label>
+    ${bt ? `<div class="hint" style="margin:0 0 6px">参考：見え方の結果では、${bt}</div>` : ''}
+    ${scale('score', 0, '総評')}${legend('うまくいかなかった', 'うまくいった')}
+    ${skew ? `<div class="hint">${skew}</div>` : ''}
+    <label for="note">なぜそう思う？</label>
+    <textarea id="note" maxlength="300" placeholder="例：自分ばかり質問して、相手の話を広げられなかった"></textarea>
+    <button class="pri block" data-act="addLog" style="margin-top:12px">記録する</button>
+    <p class="muted" style="margin-bottom:0">うまくいったことも、同じように残してください。</p>
+  </div>
+  ${sceneRows.length ? `<h2>場面ごとの総評</h2><div class="card"><div class="tblwrap"><table class="tbl"><tr><th>場面</th><th>回数</th><th>総評の平均</th></tr>
+    ${sceneRows.map(([t, a]) => `<tr><td>${esc(t)}</td><td>${a.length}</td><td>${avg(a).toFixed(1)}</td></tr>`).join('')}</table></div>
+    <p class="muted" style="margin-bottom:0">同じ場面が3回たまると、アプリから問いが出ます。</p></div>` : ''}
+  ${recent.length ? `<h2>最近の記録</h2><div class="card">${recent.map(l => `
+    <div class="item">
+      <div class="muted">${l.date}${l.scene ? '・' + esc(l.scene) : ''}・総評 ${l.score}</div>
+      <div>${esc(l.fact)}</div>
+      ${l.note ? `<div class="muted">なぜ：${esc(l.note)}</div>` : ''}
+      <div style="margin-top:6px">
+        ${l.scene ? `<button data-act="predFromLog" data-scene="${esc(l.scene)}" class="small" style="padding:4px 10px">次を予想する</button>` : ''}
+        <button data-act="delLog" data-id="${l.id}" class="small" style="padding:4px 10px">削除</button>
+      </div>
+    </div>`).join('')}</div>` : ''}
+  ${S.reflections.length ? `<h2>自分で出した答え</h2><div class="card">${[...S.reflections].reverse().map(r => `
+    <div class="item"><div class="muted">${esc(r.q)}</div><div>${esc(r.a)}</div></div>`).join('')}</div>` : ''}`;
+}
+function guessHint(txt) {
+  const m = [...new Set(txt.match(GUESS_WORDS) || [])];
+  return m.length ? `<div class="hint">推測っぽい言葉があります（${m.map(esc).join('・')}）。<br>「状況」には起きたことだけを。感想は「なぜそう思う？」へ。</div>` : '';
+}
+
+function vMirror() {
+  const m = S.mirror;
+  if (!m) {
+    if (ui.mstep === 1) return `<h1>見え方を聞く</h1>
+      <p class="muted">① 自分が思う自分 → ② 人からどう見えていると思うか → ③ 人に聞く</p>
+      <div class="card"><h2 style="margin-top:0">① 自分では、どう思う？</h2>${legend('当てはまらない', 'よく当てはまる')}
+      ${ITEMS.map(it => `<div class="item"><div>${esc(it.t)}</div>${scale('s:' + it.id, ui.draft.self[it.id], it.t)}</div>`).join('')}</div>
+      <button class="pri block" data-act="mNext">次へ</button>`;
+    return `<h1>見え方を聞く</h1>
+      <div class="card"><h2 style="margin-top:0">② 人からは、どう見えていると思う？</h2>
+      <p class="muted">自分の答えではなく、<b>相手がどう答えるか</b>を予想してください。ここが外れた分が、見え方のズレです。</p>
+      ${legend('当てはまらない', 'よく当てはまる')}
+      ${ITEMS.map(it => `<div class="item"><div>${esc(it.t)}</div>${scale('g:' + it.id, ui.draft.guess[it.id], it.t)}</div>`).join('')}</div>
+      <div class="row"><button data-act="mBack">戻る</button><button class="pri" data-act="mSave">決定する</button></div>`;
+  }
+  const st = mirrorStats(m);
+  return `<h1>見え方を聞く</h1>
+  <div class="card"><h2 style="margin-top:0">③ 人に聞く</h2>
+    <p class="muted">友人・同僚・家族などに依頼リンクを送ってください。<b>3人以上</b>に聞くと、1人の意見に引っ張られにくくなります。</p>
+    <label for="rn">あなたの呼び名 <span class="muted">（相手の画面に出ます・任意）</span></label>
+    <input type="text" id="rn" maxlength="20" value="${esc(ui.reqName)}">
+    <button class="pri block" data-act="mLink" style="margin-top:10px">依頼リンクを作る</button>
+    <p class="muted small">このアプリはサーバーに何も送りません。ただし<b>リンクの中に依頼や回答が入っている</b>ので、送った相手と、送るのに使ったアプリ（LINEなど）からは見える可能性があります。</p>
+    <div id="reqlink" style="margin-top:10px">${ui.reqLink ? linkBox(ui.reqLink, 'あなたから見た私の印象を教えてください（1分）') : ''}</div>
+  </div>
+  <div class="card"><h2 style="margin-top:0">返ってきたリンクを取り込む</h2>
+    <textarea id="ansin" placeholder="返信リンクを貼り付け"></textarea>
+    <button class="block" data-act="mImport" style="margin-top:8px">取り込む</button>
+    <p class="muted" style="margin-bottom:0">LINEでリンクを開くと、このアプリとは別のブラウザで開くことがあります。その時はリンクをコピーして、ここに貼り付けてください。</p>
+  </div>
+  ${st ? mirrorResult(st, m) : '<p class="muted">回答が届くと、ここにズレが表示されます。</p>'}
+  <button class="block danger" data-act="mReset" style="margin-top:16px">最初からやり直す</button>`;
+}
+function mirrorResult(st, m) {
+  const e = st.gErr;
+  const meaning = e == null ? '全部の項目で回答が割れていて、予想が当たったかを判定できません。' : e <= 0.5 ? '人からの見え方が、かなり見えています。' : e <= 1.0 ? '人からの見え方が、だいたい見えています。' : '見え方の予想と実際に、ズレがあります。';
+  const up = st.rows.filter(r => !r.split && r.dSelf >= 0.5).sort((a, b) => b.dSelf - a.dSelf);
+  const down = st.rows.filter(r => !r.split && r.dSelf <= -0.5).sort((a, b) => a.dSelf - b.dSelf);
+  const goods = m.responses.filter(r => r.good);
+  return `<h2>結果（${st.n}人）</h2>
+  ${st.n < 3 ? '<p class="muted">まだ少人数なので、参考程度に。</p>' : ''}
+  ${goods.length ? `<div class="card"><div class="muted">良く見えるところ</div>${goods.map(r => `<div class="item">「${esc(r.good)}」${r.from ? `<span class="muted"> — ${esc(r.from)}</span>` : ''}</div>`).join('')}</div>` : ''}
+  <div class="card"><div class="muted">見え方の予想と、実際のズレ（平均）</div><div class="stat">${e == null ? '—' : e.toFixed(1)}</div><p style="margin-bottom:0"><b>${meaning}</b></p>
+    ${st.split ? `<p class="muted small" style="margin-bottom:0">回答が割れている項目（${st.split}個）は、平均が真ん中に寄るだけなので、ズレと点数に入れていません。人によって見え方が違う、ということ自体が手がかりです。</p>` : ''}</div>
+  ${(() => { const b = selfBias(), t = biasText(b); return `<div class="card"><div class="muted">自分の見方のクセ</div>
+    <p style="margin-bottom:0"><b>${t || (b ? '人から見た評価と、ほぼ同じ高さで自分を見ています。' : '回答が割れていて、判定できません。')}</b></p>
+    ${t ? `<p class="muted small" style="margin-bottom:0">このクセは「記録」で総評を付ける時にも表示されます。</p>` : ''}</div>`; })()}
+  ${up.length ? `<div class="card"><div class="muted">自分が思うより、そう見えている</div>${up.map(r => `<div class="item">${esc(r.it.t)}<br><span class="good">自分 ${r.self} → 人から ${r.act.toFixed(1)}</span></div>`).join('')}</div>` : ''}
+  ${down.length ? `<div class="card"><div class="muted">自分が思うほど、そう見えていない</div>${down.map(r => `<div class="item">${esc(r.it.t)}<br><span class="muted">自分 ${r.self} → 人から ${r.act.toFixed(1)}</span></div>`).join('')}</div>` : ''}
+  <div class="card"><div class="tblwrap"><table class="tbl"><tr><th>項目</th><th>自分</th><th>予想</th><th>人から</th></tr>
+  ${st.rows.map(r => `<tr><td>${esc(r.it.t)}</td><td>${r.self}</td><td>${r.guess}</td><td>${r.split ? `<span class="warn">割れている</span><br><span class="muted small">${[...new Set(m.responses.map(x => x.scores[r.it.id]))].sort().join('・')}</span>` : r.act.toFixed(1)}</td></tr>`).join('')}</table></div></div>`;
+}
+
+function vRate() {
+  const who = ui.rate.n ? esc(ui.rate.n) + 'さん' : '相手';
+  if (ui.rateDone) return `<h1>ありがとうございます</h1>
+    <div class="card"><p>このリンクを <b>${who}</b> に送ってください。<b>送った時だけ</b>、回答が届きます。</p>
+    ${linkBox(ui.rateDone, '見え方の回答です')}</div>
+    <button class="block" data-act="rateHome">自分でも使ってみる</button>`;
+  return `<h1>${who}から、あなたから見た印象を聞かれています</h1>
+  <p class="muted">1〜5で、思ったままに。人柄の良し悪しではなく、<b>見えた行動</b>として答えてください。</p>
+  <div class="card">${legend('当てはまらない', 'よく当てはまる')}
+    ${ITEMS.map(it => `<div class="item"><div>${esc(it.t)}</div>${scale('r:' + it.id, 0, it.t)}</div>`).join('')}</div>
+  <div class="card">
+    <label for="good" style="margin-top:0">良く見えるところ <span class="muted">（1つ以上）</span></label>
+    <textarea id="good" maxlength="300" placeholder="例：人の話を途中で遮らないところ"></textarea>
+    <label for="from">あなたの名前 <span class="muted">（任意）</span></label>
+    <input type="text" id="from" maxlength="30">
+  </div>
+  <button class="pri block" data-act="rateSubmit">返信用のリンクを作る</button>
+  <p class="muted">回答はどこにも保存されません。<b>回答は返信リンクの中に入って</b>、送った時だけ相手に届きます。</p>`;
+}
+
+function vCheck() {
+  const c = ui.chk;
+  if (ui.chkDone) return `<h1>ありがとうございます</h1>
+    <div class="card"><p>このリンクを、頼んできた人に送ってください。<b>送った時だけ</b>、判定が届きます。</p>
+    ${linkBox(ui.chkDone, '予想の答え合わせです')}</div>
+    <button class="block" data-act="rateHome">自分でも使ってみる</button>`;
+  // 自分の端末で自分の予想の依頼を開いた時は、答えさせない（自分で「人の判定」を作れてしまうため）
+  if (S.preds.some(p => p.id === c.id)) return `<h1>これはあなた自身の予想です</h1>
+    <div class="card"><p style="margin-top:0">このリンクは、<b>その場を見ていた人</b>に送って答えてもらうためのものです。自分で答えると、人による答え合わせになりません。</p>
+    <p class="muted" style="margin-bottom:0">自分の答え合わせは、予想の画面の「当たった／外れた」から残せます。</p></div>
+    <button class="block" data-act="rateHome">ホームに戻る</button>`;
+  return `<h1>予想の答え合わせを頼まれています</h1>
+  <p class="muted">実際にどうなったかを、<b>見たとおりに</b>答えてください。頼んだ人の判定や自信は、ここには出ません。</p>
+  <div class="card"><div class="muted">何について</div><div><b>${esc(c.w)}</b></div>
+    <div class="muted" style="margin-top:8px">予想</div><div>${esc(c.e)}</div>
+    ${c.k ? `<div class="muted" style="margin-top:8px">当たりの基準</div><div>${esc(c.k)}</div>` : ''}</div>
+  <div class="card"><label style="margin-top:0">基準に照らすと？</label>
+    <div>${[['1', '当たった'], ['0', '外れた'], ['-1', '見ていない・分からない']].map(([v, l]) => chip('chkPick', v, false, l)).join('')}</div>
+    <label for="chkc">どうだった？ <span class="muted">（任意）</span></label>
+    <textarea id="chkc" maxlength="300" placeholder="例：10:40に終わった"></textarea>
+    <label for="chkf">あなたの名前 <span class="muted">（任意）</span></label>
+    <input type="text" id="chkf" maxlength="30">
+  </div>
+  <button class="pri block" data-act="chkSubmit">返信用のリンクを作る</button>
+  <p class="muted">判定はどこにも保存されません。<b>返信リンクの中に入って</b>、送った時だけ相手に届きます。</p>`;
+}
+
+function vData() {
+  return `<h1>データ</h1>
+  <div class="card">
+    <p style="margin-top:0">記録は<b>この端末のブラウザにだけ</b>保存されています。サーバーには送っていません。</p>
+    <p class="muted">ブラウザのデータを消すと、記録も消えます。ときどき書き出しておくと安心です。</p>
+    <button class="pri block" data-act="exportData">書き出す（バックアップ）</button>
+  </div>
+  <div class="card">
+    <label for="impfile" style="margin-top:0">バックアップを読み込む</label>
+    <input type="file" id="impfile" accept="application/json,.json">
+    <p class="muted" style="margin-bottom:0">読み込むと、いまの記録は置き換わります。</p>
+  </div>
+  <div class="card"><button class="block danger" data-act="wipe">すべての記録を消す</button></div>
+  <p class="muted">予想 ${S.preds.length}件 ／ 記録 ${S.logs.length}件 ／ 見え方の回答 ${S.mirror ? S.mirror.responses.length : 0}件 ／ 時間の計測 ${S.timers.filter(t => t.done).length}件</p>`;
+}
+
+/* ---------- 見え方のリンク ---------- */
+function parseLink(txt) {
+  const m = String(txt || '').match(/#([rack])=([A-Za-z0-9_-]+)/);
+  if (!m) return null;
+  try { return JSON.parse(unb64u(m[2])); } catch (e) { return null; }
+}
+function importAnswer(o) {
+  if (!o || o.t !== 'ans') return 'リンクの形式が違います';
+  if (o.v !== 1 || typeof o.id !== 'string' || !/^[A-Za-z0-9_-]{1,40}$/.test(o.id)) return 'データが壊れています';
+  if (o.is !== ITEMSET) return '項目の版が違うため、取り込めません';
+  if (!S.mirror) return 'このブラウザには「見え方」の依頼がありません。依頼を作った端末で取り込んでください';
+  if (o.rid !== S.mirror.id) return '別の依頼への回答です（やり直す前の依頼かもしれません）';
+  if (S.mirror.responses.some(r => r.id === o.id)) return 'この回答は取り込み済みです';
+  if (!Array.isArray(o.s) || o.s.length !== ITEMS.length || o.s.some(v => !Number.isInteger(v) || v < 1 || v > 5)) return 'データが壊れています';
+  // 同じ人が返信リンクを作り直して2回送った場合（名前と全項目が同じ）は、2人分に数えない
+  const from = String(o.f || '').slice(0, 30);
+  if (from && S.mirror.responses.some(r => r.from === from && ITEMS.every((it, i) => r.scores[it.id] === o.s[i]))) return '同じ人の同じ回答が、すでに取り込まれています';
+  const scores = {}; ITEMS.forEach((it, i) => { scores[it.id] = o.s[i]; });
+  S.mirror.responses.push({ id: String(o.id).slice(0, 40), from: String(o.f || '').slice(0, 30), at: Date.now(), scores, good: String(o.g || '').slice(0, 300) });
+  save();
+  return null;
+}
+
+/* ---------- 予想の答え合わせのリンク ---------- */
+function importCheck(o) {
+  if (!o || o.t !== 'chka') return 'リンクの形式が違います';
+  if (o.v !== 1 || typeof o.id !== 'string' || !/^[A-Za-z0-9_-]{1,40}$/.test(o.id) || typeof o.pid !== 'string' || ![1, 0, -1].includes(o.h)) return 'データが壊れています';
+  const p = S.preds.find(x => x.id === o.pid);
+  if (!p) return 'この端末には、この予想がありません。予想を作った端末で取り込んでください';
+  if (p.peers.some(x => x.id === o.id)) return 'この答え合わせは取り込み済みです';
+  const from = typeof o.f === 'string' ? o.f.slice(0, 30) : '', hit = o.h === -1 ? null : o.h === 1;
+  // 同じ人が返信リンクを作り直して2回送った場合は、2人分に数えない
+  if (from && p.peers.some(x => x.from === from && x.hit === hit)) return '同じ人の同じ判定が、すでに取り込まれています';
+  if (p.peers.length >= PEER_MAX) return `1つの予想に取り込めるのは${PEER_MAX}人までです`;
+  p.peers.push({ id: o.id, from, hit, note: typeof o.c === 'string' ? o.c.slice(0, 300) : '', at: Date.now(), self: selfMark(p.result) });
+  save();
+  return null;
+}
+
+/* ---------- 操作 ---------- */
+const ACTS = {
+  pick(b) { b.closest('.scale').querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); },
+  checkin() { if (!S.checkins.includes(today())) S.checkins.push(today()); save(); render(); toast('今日の分を残しました'); },
+  addPred() {
+    const w = $('#pw').value.trim(), x = $('#pe').value.trim(), cr = $('#pc').value.trim(), c = +$('#conf').value;
+    if (!w || !x) return toast('「何について」と「どうなると思う」を書いてください');
+    if (!cr) return toast('「何が起きたら当たりとするか」を先に決めてください');
+    S.preds.push({ id: uid(), created: Date.now(), what: w.slice(0, 80), expect: x.slice(0, 120), crit: cr.slice(0, 120), conf: c, mode: 'free', result: null, peers: [] });
+    save(); render(); toast('予想を残しました');
+  },
+  pmode(b) { ui.pmode = b.dataset.v; S.prefs.pmode = b.dataset.v; save(); render(); },
+  ptopic(b) { ui.ptopic = b.dataset.v; ui.ptpl = null; render(); },
+  ptpl(b) { ui.ptpl = +b.dataset.v; render(); },
+  addEasy() {
+    const tpl = topicTemplates(ui.ptopic)[ui.ptpl];
+    if (!tpl) return;
+    let n = '';
+    if (tpl.u) { n = normDigits($('#pn').value); if (!/^\d{1,4}$/.test(n)) return toast('◯に入る数字を入れてください'); n = String(+n); }
+    const expect = tpl.t.replace('{n}', n);
+    S.preds.push({ id: uid(), created: Date.now(), what: ui.ptopic.slice(0, 80), expect, crit: `「${expect}」のとおりになったら当たり`, conf: +$('#conf').value, mode: 'easy', result: null, peers: [] });
+    ui.ptopic = null; ui.ptpl = null; save(); render(); toast('予想を残しました');
+  },
+  predFromLog(b) { ui.pmode = 'easy'; ui.ptopic = b.dataset.scene; ui.ptpl = null; go('pred'); },
+  openTimer() { ui.pmode = 'time'; go('pred'); },
+  tTask(b) { $('#tt').value = b.dataset.v; $('#tref').innerHTML = taskRef(b.dataset.v); },
+  tStart() {
+    if (runningTimer()) return toast('計測中の作業があります');
+    const task = $('#tt').value.trim(), e = normDigits($('#te').value);
+    if (!task) return toast('何の作業かを書いてください');
+    if (!/^\d{1,4}$/.test(e) || +e < 1) return toast('何分かかると思うかを、数字で入れてください');
+    S.timers.push({ id: uid(), task: task.slice(0, 40), est: +e, created: Date.now(), accMs: 0, runningSince: Date.now(), done: null });
+    ui.justFinished = null; save(); render(); window.scrollTo(0, 0);
+  },
+  tPause(button) {
+    const r = timerForAction(button); if (!r) return;
+    if (r.runningSince) { r.accMs = elapsedMs(r); r.runningSince = null; } else r.runningSince = Date.now();
+    save(); render();
+  },
+  tDone(button) {
+    const r = timerForAction(button); if (!r) return;
+    const ms = elapsedMs(r), min = ms / 60000;
+    if (ms < 10000) {
+      if (Date.now() - r.created < 60000) S.timers = S.timers.filter(t => t !== r);
+      else { r.runningSince = null; r.cancelled = Date.now(); }
+      save(); render(); return toast('10秒未満だったので、計測結果には入れませんでした');
+    }
+    // 止め忘れ対策：見積もりの4倍かつ3時間を超えたら確認（1件の止め忘れで点数が大きく崩れるため）
+    if (min > Math.max(r.est * 4, 180) && !confirm(`見積もり${r.est}分に対して、${fmtMin(min)}経っています。\n\n止め忘れの場合は「キャンセル」を押すと、記録せずに取り消します（取り消した件数は残ります）。\n実際にこれだけかかったなら「OK」で記録します。`)) {
+      r.runningSince = null; r.cancelled = Date.now(); save(); render(); return toast('記録せずに取り消しました');
+    }
+    r.accMs = ms; r.runningSince = null; r.done = { actual: ms / 60000, at: Date.now(), note: '' };
+    ui.justFinished = r.id; save(); render(); window.scrollTo(0, 0);
+  },
+  tCancel(button) {
+    const r = timerForAction(button); if (!r) return;
+    // 始めて1分以内は押し間違いとして跡を残さない。それ以降は「取り消した件数」として残す
+    if (Date.now() - r.created < 60000) { if (!confirm('この計測を取り消しますか？')) return; S.timers = S.timers.filter(t => t !== r); }
+    else { if (!confirm('この計測を取り消しますか？\n点数には入りませんが、取り消した件数は残ります。')) return; r.runningSince = null; r.cancelled = Date.now(); }
+    save(); render();
+  },
+  tNote() {
+    const t = S.timers.find(x => x.id === ui.justFinished);
+    if (t && t.done) t.done.note = $('#tnote').value.trim().slice(0, 300);
+    ui.justFinished = null; save(); render(); toast('残しました');
+  },
+  resolve(b) {
+    const it = b.closest('[data-pid]'), p = it.querySelector('.rsv');
+    p.hidden = false; p.dataset.hit = b.dataset.hit;
+    it.querySelectorAll('[data-act=resolve]').forEach(x => x.classList.toggle('pri', x === b));
+    p.querySelector('textarea').focus();
+  },
+  saveResolve(b) {
+    const it = b.closest('[data-pid]'), panel = b.closest('.rsv'), p = S.preds.find(x => x.id === it.dataset.pid);
+    if (!p || panel.dataset.hit == null) return;
+    p.result = { hit: panel.dataset.hit === '1', note: panel.querySelector('textarea').value.trim().slice(0, 300), at: Date.now() };
+    p.peers.forEach(x => { if (!x.self) x.self = selfMark(p.result); });   // 届いていた人の判定は、ここで初めて見える
+    save(); render(); toast(p.peers.length ? '答え合わせを残しました。人の判定も見られます' : '答え合わせを残しました');
+  },
+  delPred(b) {
+    const id = b.closest('[data-pid]').dataset.pid, p = S.preds.find(x => x.id === id);
+    // 画面の表示だけでなく、ここでも期限を確かめる（外れそうな予想を消して点数を盛れないように）
+    if (!p || p.result || Date.now() - p.created >= PRED_DELETE_MS) return toast('作ってから1時間を過ぎた予想は削除できません');
+    if (!confirm('この予想を削除しますか？')) return;
+    S.preds = S.preds.filter(x => x.id !== id); save(); render();
+  },
+  voidPred(b) {
+    const p = S.preds.find(x => x.id === b.closest('[data-pid]').dataset.pid);
+    if (!p || p.result || !confirm('「起きなかった（判定できない）」として閉じますか？\n点数には入りません。件数は残ります。')) return;
+    p.result = { hit: false, void: true, note: '', at: Date.now() };
+    p.peers.forEach(x => { if (!x.self) x.self = 'void'; });
+    save(); render();
+  },
+  reopenPred(b) {
+    const p = S.preds.find(x => x.id === b.closest('[data-pid]').dataset.pid);
+    if (!p || !confirm('判定をやり直しますか？（答え合わせ待ちに戻ります）')) return;
+    p.result = null; save(); render();
+  },
+  tag(b) { $('#scene').value = b.dataset.t; },
+  addLog() {
+    const fact = $('#fact').value.trim(), score = readScale('score'), note = $('#note').value.trim(), scene = $('#scene').value.trim();
+    if (!fact) return toast('「状況」を書いてください');
+    if (!score) return toast('総評を1〜5で選んでください');
+    S.logs.push({ id: uid(), at: Date.now(), date: today(), scene: scene.slice(0, 30), fact: fact.slice(0, 500), score, note: note.slice(0, 300) });
+    ui.justLogged = { scene: scene.slice(0, 30) };
+    save(); render(); window.scrollTo(0, 0); toast('記録しました');
+  },
+  delLog(b) {
+    if (!confirm('この記録を削除しますか？')) return;
+    S.logs = S.logs.filter(l => l.id !== b.dataset.id); save(); render();
+  },
+  answerQ(b) {
+    const a = $('#qa').value.trim();
+    if (!a) return toast('思いつくことを1つ書いてください');
+    S.reflections.push({ key: b.dataset.key, q: b.dataset.q, a: a.slice(0, 500), at: Date.now() });
+    save(); render(); toast('残しました');
+  },
+  mNext() {
+    const self = {}; for (const it of ITEMS) { const v = readScale('s:' + it.id); if (!v) return toast('すべての項目を選んでください'); self[it.id] = v; }
+    ui.draft.self = self; ui.mstep = 2; render(); window.scrollTo(0, 0);
+  },
+  mBack() {
+    ITEMS.forEach(it => { const v = readScale('g:' + it.id); if (v) ui.draft.guess[it.id] = v; });
+    ui.mstep = 1; render(); window.scrollTo(0, 0);
+  },
+  mSave() {
+    if (S.mirror) return toast('別のタブですでに依頼が作られています。見え方を開き直してください');
+    const guess = {}; for (const it of ITEMS) { const v = readScale('g:' + it.id); if (!v) return toast('すべての項目を選んでください'); guess[it.id] = v; }
+    S.mirror = { id: uid(), created: Date.now(), self: ui.draft.self, guess, responses: [] };
+    ui.mstep = 1; ui.draft = { self: {}, guess: {} }; save(); render(); window.scrollTo(0, 0);
+  },
+  mLink() {
+    ui.reqName = $('#rn').value.trim().slice(0, 20);
+    // 自分の答え（self/guess）は入れない：相手が引っ張られないように
+    ui.reqLink = base() + '#r=' + b64u(JSON.stringify({ v: 1, t: 'req', id: S.mirror.id, is: ITEMSET, n: ui.reqName }));
+    $('#reqlink').innerHTML = linkBox(ui.reqLink, 'あなたから見た私の印象を教えてください（1分）');
+  },
+  mImport() {
+    const err = importAnswer(parseLink($('#ansin').value));
+    if (err) return toast(err);
+    render(); toast('回答を取り込みました');
+  },
+  mReset() {
+    if (!confirm('自分の答えと、届いた回答をすべて消して、最初からやり直しますか？')) return;
+    S.mirror = null; ui.reqLink = null; save(); render();
+  },
+  rateSubmit() {
+    const s = ITEMS.map(it => readScale('r:' + it.id));
+    if (s.some(v => !v)) return toast('すべての項目を選んでください');
+    const g = $('#good').value.trim();
+    if (!g) return toast('「良く見えるところ」を1つ書いてください');
+    const payload = { v: 1, t: 'ans', rid: ui.rate.id, is: ITEMSET, id: uid(), f: $('#from').value.trim().slice(0, 30), s, g: g.slice(0, 300) };
+    ui.rateDone = base() + '#a=' + b64u(JSON.stringify(payload));
+    render(); window.scrollTo(0, 0);
+  },
+  rateHome() { history.replaceState(null, '', location.pathname + location.search); ui.rate = null; ui.rateDone = null; ui.chk = null; ui.chkDone = null; go('home'); },
+  chkLink(b) {
+    const p = S.preds.find(x => x.id === b.closest('[data-pid]').dataset.pid);
+    if (!p) return;
+    // 自分の判定・自信は入れない（相手が引っ張られないように）
+    ui.chkLink = { pid: p.id, url: base() + '#c=' + b64u(JSON.stringify({ v: 1, t: 'chk', id: p.id, w: p.what, e: p.expect, k: p.crit })) };
+    render();
+  },
+  chkPick(b) { b.parentElement.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); },
+  chkSubmit() {
+    const on = document.querySelector('[data-act="chkPick"].on');
+    if (!on) return toast('「当たった」「外れた」「見ていない・分からない」から選んでください');
+    const payload = { v: 1, t: 'chka', pid: ui.chk.id, id: uid(), h: +on.dataset.v, f: $('#chkf').value.trim().slice(0, 30), c: $('#chkc').value.trim().slice(0, 300) };
+    ui.chkDone = base() + '#k=' + b64u(JSON.stringify(payload));
+    render(); window.scrollTo(0, 0);
+  },
+  chkImport() {
+    const err = importCheck(parseLink($('#chkin').value));
+    if (err) return toast(err);
+    render(); toast('答え合わせを取り込みました');
+  },
+  copy(b) { copyText(b.dataset.text); },
+  share(b) { navigator.share({ title: 'ズレ帳', text: b.dataset.text, url: b.dataset.url }).catch(() => {}); },
+  exportData() { download(`zure-backup-${today()}.json`, JSON.stringify(S, null, 2)); },
+  wipe() {
+    if (!confirm('すべての記録を消します。元に戻せません。よろしいですか？')) return;
+    if (!confirm('本当に消しますか？（バックアップを書き出していない場合、復元できません）')) return;
+    S = blank(); save(); ui = { ...ui, mstep: 1, draft: { self: {}, guess: {} }, reqLink: null }; render(); toast('消しました');
+  }
+};
+const STORED_ACTIONS = new Set(['checkin','addPred','pmode','addEasy','tStart','tPause','tDone','tCancel','tNote','saveResolve','delPred','voidPred','reopenPred','addLog','delLog','answerQ','mSave','mImport','mReset','chkImport','wipe']);
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]'); if (g) { go(g.dataset.go); return; }
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const f = ACTS[b.dataset.act];
+  if (!f) return;
+  const run = () => {
+    const beforeUi = JSON.parse(JSON.stringify(ui));
+    try { if (STORED_ACTIONS.has(b.dataset.act)) load(); f(b, e); }
+    catch (err) { ui = beforeUi; toast(err.message || '操作を完了できませんでした'); }
+  };
+  // 対応ブラウザでは別タブの読み取り→変更→保存を直列化する。
+  // コピー・共有はユーザー操作直後に実行する必要があるので、ロック待ちさせない。
+  if (STORED_ACTIONS.has(b.dataset.act) && navigator.locks) navigator.locks.request(KEY, run).catch(err => toast(err.message));
+  else run();
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'conf') $('#confv').textContent = e.target.value + '%';
+  if (e.target.id === 'fact') $('#fact-hint').innerHTML = guessHint(e.target.value);
+});
+document.addEventListener('change', e => {
+  if (e.target.id !== 'impfile' || !e.target.files[0]) return;
+  const r = new FileReader();
+  r.onload = () => {
+    const apply = () => {
+    try {
+      const o = JSON.parse(r.result);
+      if (!o || !Array.isArray(o.preds) || !Array.isArray(o.logs)) throw new Error('shape');
+      if (!confirm('いまの記録を、このバックアップで置き換えますか？')) return;
+      S = normalize(o); save();
+      // storageイベントは保存したタブ自身には届かない。旧データに属する表示状態をここで捨てる。
+      ui = { ...ui, mstep: 1, draft: {self:{},guess:{}}, reqLink: null, reqName: '',
+        justFinished: null, justLogged: null, ptopic: null, ptpl: null, pmode: null };
+      render(); toast('読み込みました');
+    } catch (err) { toast(err.message.startsWith('保存できません') ? err.message : 'バックアップとして読めませんでした'); }
+    };
+    if (navigator.locks) navigator.locks.request(KEY, apply).catch(err => toast(err.message));
+    else apply();
+  };
+  r.readAsText(e.target.files[0]);
+});
+
+// 計測中の表示を1秒ごとに更新（数値は毎回、開始時刻から計算し直す）
+setInterval(() => {
+  const el = document.getElementById('elapsed'), r = runningTimer && S && runningTimer();
+  if (el && r) el.textContent = fmtMS(elapsedMs(r));
+}, 1000);
+
+/* ---------- 起動 ---------- */
+function boot(locked = false) {
+  if (!locked && navigator.locks) { navigator.locks.request(KEY, () => boot(true)).catch(err => toast(err.message)); return; }
+  load();
+  const h = location.hash;
+  if (h.startsWith('#r=')) {
+    const o = parseLink(h);
+    if (o && o.v === 1 && o.t === 'req' && typeof o.id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(o.id) && o.is === ITEMSET && (o.n == null || typeof o.n === 'string')) { ui.rate = { t: 'req', is: ITEMSET, id: o.id, n: (o.n || '').slice(0, 20) }; ui.view = 'rate'; }
+    else { history.replaceState(null, '', location.pathname); setTimeout(() => toast('リンクが読めませんでした'), 50); }
+  } else if (h.startsWith('#a=')) {
+    let err;
+    try { err = importAnswer(parseLink(h)); }
+    catch (e) { err = e.message; }
+    // 保存できなかった返信はURLに残し、再読み込み・コピーで再試行できるようにする。
+    if (!err) history.replaceState(null, '', location.pathname);
+    ui.view = 'mirror';
+    setTimeout(() => toast(err || '回答を取り込みました'), 50);
+  } else if (h.startsWith('#c=')) {
+    const o = parseLink(h), str = (v, max) => typeof v === 'string' && v.length <= max;
+    if (o && o.v === 1 && o.t === 'chk' && typeof o.id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(o.id) && str(o.w, 80) && str(o.e, 120) && (o.k == null || str(o.k, 200))) {
+      ui.chk = { id: o.id, w: o.w, e: o.e, k: o.k || '' }; ui.view = 'check';
+    } else { history.replaceState(null, '', location.pathname); setTimeout(() => toast('リンクが読めませんでした'), 50); }
+  } else if (h.startsWith('#k=')) {
+    let err;
+    try { err = importCheck(parseLink(h)); }
+    catch (e) { err = e.message; }
+    // 保存できなかった返信はURLに残し、再読み込み・コピーで再試行できるようにする。
+    if (!err) history.replaceState(null, '', location.pathname);
+    ui.view = 'pred'; if ((ui.pmode || S.prefs.pmode) === 'time') ui.pmode = 'easy';   // 時間の画面には予想の一覧が出ないため
+    setTimeout(() => toast(err || '答え合わせを取り込みました'), 50);
+  }
+  render();
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  // ブラウザにデータを消されにくくする（対応ブラウザのみ。iPhoneのSafariは使わない日が続くと消すことがある）
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+}
+// 別のタブで保存されたら、こちらも読み直す（後から保存した側が全体を上書きして、記録が消えるのを防ぐ）
+window.addEventListener('storage', e => {
+  if (!S || (e.key !== KEY && e.key !== null)) return;
+  const oldMirror = S.mirror && S.mirror.id;
+  const fields = [...document.querySelectorAll('#app input[id]:not([type=file]), #app textarea[id]')].map(el => ({id:el.id,value:el.value}));
+  const scales = [...document.querySelectorAll('#app .scale')].map(el => ({name:el.dataset.name,value:readScale(el.dataset.name)}));
+  const panels = [...document.querySelectorAll('[data-pid] .rsv')].filter(el => !el.hidden).map(el => ({id:el.closest('[data-pid]').dataset.pid,hit:el.dataset.hit,note:el.querySelector('textarea').value}));
+  const focused = document.activeElement && document.activeElement.id;
+  load();
+  if (ui.view === 'rate' || ui.view === 'check') return;
+  const mirrorChanged = oldMirror !== (S.mirror && S.mirror.id);
+  if (mirrorChanged) { ui.reqLink = null; ui.mstep = 1; ui.draft = {self:{},guess:{}}; }
+  render();
+  if (ui.view === 'mirror' && mirrorChanged) return;
+  fields.forEach(f => { const el = document.getElementById(f.id); if (el) el.value = f.value; });
+  document.querySelectorAll('#app .scale').forEach(el => {
+    const saved = scales.find(s => s.name === el.dataset.name);
+    if (saved) el.querySelectorAll('button').forEach(b => { const on = +b.dataset.v === saved.value; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); });
+  });
+  panels.forEach(p => {
+    const item = [...document.querySelectorAll('[data-pid]')].find(el => el.dataset.pid === p.id), panel = item && item.querySelector('.rsv');
+    if (panel) { panel.hidden = false; panel.dataset.hit = p.hit; panel.querySelector('textarea').value = p.note; }
+  });
+  if ($('#confv') && $('#conf')) $('#confv').textContent = $('#conf').value + '%';
+  if ($('#fact-hint') && $('#fact')) $('#fact-hint').innerHTML = guessHint($('#fact').value);
+  if (focused && document.getElementById(focused)) document.getElementById(focused).focus({preventScroll:true});
+});
+// 開いているタブでリンクを開くと、# 以降だけが変わって読み込み直されない → 読み直してリンクを処理する
+window.addEventListener('hashchange', () => { if (/^#[rack]=/.test(location.hash)) location.reload(); });
+boot();
+</script>
+</body>
+</html>
